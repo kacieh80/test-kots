@@ -1,0 +1,124 @@
+---
+on:
+  issues:
+    types: [opened]
+
+name: Issue Comments
+jobs:
+  ie-project:
+    name: Add issue to the Inbound Escalations project
+    runs-on: ubuntu-latest
+    if: "contains(join(github.event.issue.labels.*.name, ' '), 'inbound-escalation')"
+    steps:
+      - uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+                const PROJECT_NAME = "Inbound Escalations";
+                const NEW_COLUMN = "New";
+                const projects = await github.projects.listForRepo({
+                  owner: context.payload.repository.owner.login,
+                  repo: context.payload.repository.name,
+                });
+                // there should always be exactly one
+                const escalationProj = projects.data.filter(
+                    (p) => p.name.indexOf(PROJECT_NAME) !== -1
+                )[0];
+                if (!escalationProj) {
+                  core.setFailed("Could not find a project called " + PROJECT_NAME);
+                }
+                core.info("found escalation project");
+                const columns = await github.projects.listColumns({
+                  project_id: escalationProj.id,
+                });
+                const newIssuesColumn = columns.data.filter((c) => c.name == NEW_COLUMN)[0];
+                if (!newIssuesColumn) {
+                  core.setFailed("Could not find a column called " + NEW_COLUMN);
+                }
+                core.info("New issues column project");
+
+                await github.projects.createCard({
+                  column_id: newIssuesColumn.id,
+                  content_id: context.payload.issue.id,
+                  content_type: "Issue",
+                })
+  npi-project:
+    name: Add issue to the New Production Installs project
+    runs-on: ubuntu-latest
+    if: "contains(join(github.event.issue.labels.*.name, ' '), 'kind::customer')"
+    steps:
+      - uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const PROJECT_NAME = "New Production Installs";
+            const COLUMN = "Not Ready";
+            const projects = await github.projects.listForRepo({
+              owner: context.payload.repository.owner.login,
+              repo: context.payload.repository.name,
+            });
+            // there should always be exactly one
+            const escalationProj = projects.data.filter(
+                (p) => p.name.indexOf(PROJECT_NAME) !== -1
+            )[0];
+            if (!escalationProj) {
+              core.setFailed("Could not find a project called " + PROJECT_NAME);
+            }
+            core.info("found escalation project");
+            const columns = await github.projects.listColumns({
+              project_id: escalationProj.id,
+            });
+            const notReadyColumn = columns.data.filter((c) => c.name == COLUMN)[0];
+            if (!notReadyColumn) {
+              core.setFailed("Could not find a column called " + COLUMN);
+            }
+            core.info("New issues column project");
+
+            await github.projects.createCard({
+              column_id: notReadyColumn.id,
+              content_id: context.payload.issue.id,
+              content_type: "Issue",
+            })
+  enhancements-project:
+    name: Add issue to the Enhancements project
+    runs-on: ubuntu-latest
+    if: >
+      (
+        contains(join(github.event.issue.labels.*.name, ' '), 'kind::bug')
+        || contains(join(github.event.issue.labels.*.name, ' '), 'kind::feature-request')
+      )
+    steps:
+      - uses: actions/github-script@v3
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            const PROJECT_NAME = "Enhancements";
+            const trackedLabel = context.payload.issue.labels.filter(label => label.name === "enhancements::tracked");
+            const COLUMN = trackedLabel.length ? "Tracked" : "New";
+
+            const projects = await github.projects.listForRepo({
+              owner: context.payload.repository.owner.login,
+              repo: context.payload.repository.name,
+            });
+            // there should always be exactly one
+            const escalationProj = projects.data.filter(
+                (p) => p.name.indexOf(PROJECT_NAME) !== -1
+            )[0];
+            if (!escalationProj) {
+              core.setFailed("Could not find a project called " + PROJECT_NAME);
+            }
+            core.info("found escalation project");
+            const columns = await github.projects.listColumns({
+              project_id: escalationProj.id,
+            });
+            const issueColumn = columns.data.filter((c) => c.name == COLUMN)[0];
+            if (!issueColumn) {
+              core.setFailed("Could not find a column called " + COLUMN);
+            }
+            core.info("New issues column project");
+
+            await github.projects.createCard({
+              column_id: issueColumn.id,
+              content_id: context.payload.issue.id,
+              content_type: "Issue",
+            })
