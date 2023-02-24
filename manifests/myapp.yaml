@@ -20,4 +20,5 @@ spec:
 
   # values are used in the customer environment, as a pre-render step
   # these values will be supplied to helm template
-  values: {}
+  values:
+    replicaCount:  repl{{ ConfigOption "replicas" }}

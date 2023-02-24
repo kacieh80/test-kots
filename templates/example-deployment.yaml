@@ -6,6 +6,7 @@ metadata:
     app: example
     component: nginx
 spec:
+  replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
       app: example

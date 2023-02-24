@@ -18,3 +18,9 @@ spec:
           help_text: If desired, enter the hostname for ingress to this application. You can enter the IP of this instance, or a DNS hostname.
           type: text
           when: repl{{ ConfigOptionEquals "use_ingress" "1" }}
+        - name: replicas
+          title: Replicas
+          help_text: How many replicas to use
+          type: text
+          default: '3'
+
