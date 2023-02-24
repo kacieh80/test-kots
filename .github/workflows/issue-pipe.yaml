@@ -1,0 +1,56 @@
+---
+on:
+  issue_comment:
+    types: [created]
+
+name: Issue Comments
+jobs:
+  check_comments:
+    name: Create matching SC issue
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v3
+        if: >
+          (
+            contains(github.event.comment.body, '/clubhouse') ||
+            contains(github.event.comment.body, '/shortcut')
+          ) &&  ! (
+            contains(join(github.event.issue.labels.*.name, ' '), 'ch/') ||
+            contains(join(github.event.issue.labels.*.name, ' '), 'sc::')
+          )
+
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            try {
+                const membership = await github.orgs.checkPublicMembershipForUser({
+                    org: "replicatedhq",
+                    username: "${{ github.event.comment.user.login }}"
+                })
+                if (! membership.status === 204 ) {
+                    core.setFailed("failed to verify repo membership")
+                }
+            } catch (e) {
+                core.setFailed("failed to verify repo membership")
+            }
+
+      - name: Create CH Issue
+        if: >
+          (
+            contains(github.event.comment.body, '/clubhouse') ||
+            contains(github.event.comment.body, '/shortcut')
+          ) &&  ! (
+            contains(join(github.event.issue.labels.*.name, ' '), 'ch/') ||
+            contains(join(github.event.issue.labels.*.name, ' '), 'sc::')
+          )
+        id: create-sc
+        uses: docker://dexhorthy/gh-to-zap:1
+        env:
+          COMMENT: ${{ github.event.comment.body }}
+          TITLE: ${{ github.event.issue.title }}
+          BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+          ISSUE_REPO: ${{ github.event.repository.full_name }}
+          ISSUE_ID: ${{ github.event.issue.id }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          GITHUB_LABELS: ${{ join(github.event.issue.labels.*.name, ',') }}
